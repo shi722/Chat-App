@@ -1,5 +1,5 @@
 import { useChatStore } from "../store/useChatStore";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
@@ -19,6 +19,7 @@ const ChatContainer = () => {
   } = useChatStore();
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
+  const [menuOpenId, setMenuOpenId] = useState(null);
 
   useEffect(() => {
     getMessages(selectedUser._id);
@@ -67,23 +68,53 @@ const ChatContainer = () => {
                 />
               </div>
             </div>
-            <div className="chat-header mb-1 flex flex-row-reverse gap-2">  
-              <div className="hover:cursor-pointer">
-              <HiDotsVertical />
+            <div className="chat-header mb-1 flex flex-row-reverse gap-2 relative">
+              <div className="hover:cursor-pointer" onClick={() => setMenuOpenId(menuOpenId === message._id ? null : message._id)}>
+                <HiDotsVertical />
               </div>
+              {menuOpenId === message._id && (
+                <div className="absolute right-0 top-6 bg-base-200 border rounded shadow z-10 min-w-[140px]">
+                  <button
+                    className="block w-full text-left px-4 py-2 hover:bg-base-300"
+                    onClick={() => {
+                      useChatStore.getState().deleteMessageForMe(message._id);
+                      setMenuOpenId(null);
+                    }}
+                  >
+                    Delete for me
+                  </button>
+                  {message.senderId === authUser._id && (
+                    <button
+                      className="block w-full text-left px-4 py-2 hover:bg-base-300 text-red-500"
+                      onClick={() => {
+                        useChatStore.getState().deleteMessageForEveryone(message._id);
+                        setMenuOpenId(null);
+                      }}
+                    >
+                      Delete for everyone
+                    </button>
+                  )}
+                </div>
+              )}
               <time className="text-xs opacity-50 ml-1">
                 {formatMessageTime(message.createdAt)}
               </time>
             </div>
             <div className="chat-bubble flex flex-col">
-              {message.image && (
-                <img
-                  src={message.image}
-                  alt="Attachment"
-                  className="sm:max-w-[200px] rounded-md mb-2"
-                />
+              {message.isDeletedForEveryone ? (
+                <span className="italic text-zinc-400">Message deleted</span>
+              ) : (
+                <>
+                  {message.image && (
+                    <img
+                      src={message.image}
+                      alt="Attachment"
+                      className="sm:max-w-[200px] rounded-md mb-2"
+                    />
+                  )}
+                  {message.text && <p>{message.text}</p>}
+                </>
               )}
-              {message.text && <p>{message.text}</p>}
             </div>
           </div>
         ))}

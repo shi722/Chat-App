@@ -18,6 +18,14 @@ const messageSchema = new mongoose.Schema(
     image: {
       type: String,
     },
+    deletedBy: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }],
+    isDeletedForEveryone: {
+      type: Boolean,
+      default: false
+    },
   },
   { timestamps: true }
 );

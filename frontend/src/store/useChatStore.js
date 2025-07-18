@@ -43,6 +43,31 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  deleteMessageForMe: async (messageId) => {
+    try {
+      await axiosInstance.delete(`/messages/delete-for-me/${messageId}`);
+      set({
+        messages: get().messages.filter((msg) => msg._id !== messageId),
+      });
+      toast.success("Message deleted for you");
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Failed to delete message");
+    }
+  },
+  deleteMessageForEveryone: async (messageId) => {
+    try {
+      await axiosInstance.delete(`/messages/delete-for-everyone/${messageId}`);
+      set({
+        messages: get().messages.map((msg) =>
+          msg._id === messageId ? { ...msg, isDeletedForEveryone: true } : msg
+        ),
+      });
+      toast.success("Message deleted for everyone");
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Failed to delete message for everyone");
+    }
+  },
+
   subscribeToMessages: () => {
     const { selectedUser } = get();
     if (!selectedUser) return;

@@ -21,12 +21,17 @@ export const getMessages = async (req, res) => {
     const { id: userToChatId } = req.params;
     const myId = req.user._id;
 
-    const messages = await Message.find({
+    let messages = await Message.find({
       $or: [
         { senderId: myId, receiverId: userToChatId },
         { senderId: userToChatId, receiverId: myId },
       ],
     });
+
+    // Filter out messages deleted for this user
+    messages = messages.filter(
+      (msg) => !msg.deletedBy?.map((id) => String(id)).includes(String(myId))
+    );
 
     res.status(200).json(messages);
   } catch (error) {
@@ -65,6 +70,42 @@ export const sendMessage = async (req, res) => {
     res.status(201).json(newMessage);
   } catch (error) {
     console.log("Error in sendMessage controller: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const deleteMessageForMe = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+    const message = await Message.findById(messageId);
+    if (!message) return res.status(404).json({ error: "Message not found" });
+    if (!message.deletedBy.includes(userId)) {
+      message.deletedBy.push(userId);
+      await message.save();
+    }
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error in deleteMessageForMe:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const deleteMessageForEveryone = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+    const message = await Message.findById(messageId);
+    if (!message) return res.status(404).json({ error: "Message not found" });
+    // Only sender can delete for everyone
+    if (String(message.senderId) !== String(userId)) {
+      return res.status(403).json({ error: "Only sender can delete for everyone" });
+    }
+    message.isDeletedForEveryone = true;
+    await message.save();
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error in deleteMessageForEveryone:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };
