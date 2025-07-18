@@ -82,11 +82,21 @@ export const useChatStore = create((set, get) => ({
         messages: [...get().messages, newMessage],
       });
     });
+
+    // Listen for message status updates
+    socket.on("messageStatusUpdated", ({ messageId, status }) => {
+      set({
+        messages: get().messages.map((msg) =>
+          msg._id === messageId ? { ...msg, status } : msg
+        ),
+      });
+    });
   },
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
     socket.off("newMessage");
+    socket.off("messageStatusUpdated");
   },
 
   setSelectedUser: (selectedUser) => set({ selectedUser }),

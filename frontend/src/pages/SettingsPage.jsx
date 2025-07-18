@@ -110,6 +110,13 @@ const SettingsPage = () => {
           </div>
         </div>
       </div>
+      {/* Footer Section */}
+      <footer className="w-full mt-10 mb-2 flex flex-col items-center text-xs text-base-content/60">
+        <div>Email: <a href="mailto:shivanshusolanki68@gmail.com" className="underline">shivanshusolanki68@gmail.com</a></div>
+        <div>Contact: <a href="tel:+919568997652" className="underline">+91 9568997652</a></div>
+        <div>© {new Date().getFullYear()} ByteTalk. All rights reserved.</div>
+        <div>Made with ❤️ by Shivanshu Solanki</div>
+      </footer>
     </div>
   );
 };

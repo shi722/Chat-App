@@ -17,7 +17,11 @@ const NoChatSelected = () => {
         </div>
 
         {/* Welcome Text */}
-        <h2 className="text-2xl font-bold">Welcome to Vaartalap!</h2>
+        <h2
+          className="text-3xl font-extrabold bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent transition-transform duration-300 hover:scale-110 hover:from-pink-500 hover:to-blue-500 animate-pulse cursor-pointer"
+        >
+          Welcome to ByteTalk!
+        </h2>
         <p className="text-base-content/60">
           Select a conversation from the sidebar to start chatting
         </p>

@@ -18,6 +18,7 @@ const ChatContainer = () => {
     unsubscribeFromMessages,
   } = useChatStore();
   const { authUser } = useAuthStore();
+  const { socket } = useAuthStore();
   const messageEndRef = useRef(null);
   const [menuOpenId, setMenuOpenId] = useState(null);
 
@@ -34,6 +35,27 @@ const ChatContainer = () => {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  // Emit delivered and seen events for received messages
+  useEffect(() => {
+    if (!socket || !selectedUser || !messages.length) return;
+    messages.forEach((msg) => {
+      if (
+        msg.receiverId === authUser._id &&
+        msg.senderId === selectedUser._id &&
+        msg.status === "sent"
+      ) {
+        socket.emit("messageDelivered", { messageId: msg._id, receiverId: authUser._id });
+      }
+      if (
+        msg.receiverId === authUser._id &&
+        msg.senderId === selectedUser._id &&
+        msg.status === "delivered"
+      ) {
+        socket.emit("messageSeen", { messageId: msg._id, receiverId: authUser._id });
+      }
+    });
+  }, [messages, selectedUser, authUser, socket]);
 
   if (isMessagesLoading) {
     return (
@@ -99,6 +121,39 @@ const ChatContainer = () => {
               <time className="text-xs opacity-50 ml-1">
                 {formatMessageTime(message.createdAt)}
               </time>
+              {/* Message status ticks for sent messages */}
+              {message.senderId === authUser._id && !message.isDeletedForEveryone && (
+                <span className="ml-1 flex items-center">
+                  {message.status === "sent" && (
+                    // Single grey tick
+                    <svg width="18" height="18" viewBox="0 0 18 18" style={{ color: "#b0b0b0" }}>
+                      <path d="M6.5 9.5L9 12L15 6" stroke="currentColor" strokeWidth="2" fill="none" />
+                    </svg>
+                  )}
+                  {message.status === "delivered" && (
+                    // Double grey tick
+                    <span style={{ display: "inline-flex" }}>
+                      <svg width="18" height="18" viewBox="0 0 18 18" style={{ color: "#b0b0b0" }}>
+                        <path d="M5 10.5L8 13.5L14 7.5" stroke="currentColor" strokeWidth="2" fill="none" />
+                      </svg>
+                      <svg width="18" height="18" viewBox="0 0 18 18" style={{ color: "#b0b0b0", marginLeft: "-8px" }}>
+                        <path d="M3.5 9.5L7 13L13.5 6.5" stroke="currentColor" strokeWidth="2" fill="none" />
+                      </svg>
+                    </span>
+                  )}
+                  {message.status === "seen" && (
+                    // Double blue tick
+                    <span style={{ display: "inline-flex" }}>
+                      <svg width="18" height="18" viewBox="0 0 18 18" style={{ color: "#2196f3" }}>
+                        <path d="M5 10.5L8 13.5L14 7.5" stroke="currentColor" strokeWidth="2" fill="none" />
+                      </svg>
+                      <svg width="18" height="18" viewBox="0 0 18 18" style={{ color: "#2196f3", marginLeft: "-8px" }}>
+                        <path d="M3.5 9.5L7 13L13.5 6.5" stroke="currentColor" strokeWidth="2" fill="none" />
+                      </svg>
+                    </span>
+                  )}
+                </span>
+              )}
             </div>
             <div className="chat-bubble flex flex-col">
               {message.isDeletedForEveryone ? (

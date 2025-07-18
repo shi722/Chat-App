@@ -58,6 +58,7 @@ export const sendMessage = async (req, res) => {
       receiverId,
       text,
       image: imageUrl,
+      status: "sent"
     });
 
     await newMessage.save();
@@ -65,6 +66,11 @@ export const sendMessage = async (req, res) => {
     const receiverSocketId = getReceiverSocketId(receiverId);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("newMessage", newMessage);
+    }
+    // Emit to sender for immediate UI update
+    const senderSocketId = getReceiverSocketId(senderId);
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("messageStatusUpdated", { messageId: newMessage._id, status: "sent" });
     }
 
     res.status(201).json(newMessage);
