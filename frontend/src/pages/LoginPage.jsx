@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import AuthImagePattern from "../components/AuthImagePattern";
 import { Link } from "react-router-dom";
@@ -12,6 +12,93 @@ const LoginPage = () => {
   });
   const { login, isLoggingIn } = useAuthStore();
 
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const mouse = useRef({ x: 250, y: 300 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let width = canvas.offsetWidth;
+    let height = canvas.offsetHeight;
+    canvas.width = width;
+    canvas.height = height;
+
+    // Responsive resize
+    const handleResize = () => {
+      width = canvas.offsetWidth;
+      height = canvas.offsetHeight;
+      canvas.width = width;
+      canvas.height = height;
+    };
+    window.addEventListener("resize", handleResize);
+
+    // Mouse move
+    const handleMouseMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.current.x = e.clientX - rect.left;
+      mouse.current.y = e.clientY - rect.top;
+    };
+    canvas.addEventListener("mousemove", handleMouseMove);
+
+    // Particle system
+    const colors = ["#2196f3", "#e040fb", "#ff9800", "#00e676", "#ff1744"];
+    const particles = Array.from({ length: 18 }).map((_, i) => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 1.5,
+      vy: (Math.random() - 0.5) * 1.5,
+      r: 28 + Math.random() * 10,
+      color: colors[i % colors.length],
+    }));
+
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+      // Draw and update particles
+      for (let p of particles) {
+        // Liquid attraction to mouse
+        const dx = mouse.current.x - p.x;
+        const dy = mouse.current.y - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 180) {
+          // Softly attract
+          p.vx += dx * 0.0012;
+          p.vy += dy * 0.0012;
+        }
+        // Friction
+        p.vx *= 0.98;
+        p.vy *= 0.98;
+        // Move
+        p.x += p.vx;
+        p.y += p.vy;
+        // Bounce off walls
+        if (p.x < p.r) { p.x = p.r; p.vx *= -0.7; }
+        if (p.x > width - p.r) { p.x = width - p.r; p.vx *= -0.7; }
+        if (p.y < p.r) { p.y = p.r; p.vy *= -0.7; }
+        if (p.y > height - p.r) { p.y = height - p.r; p.vy *= -0.7; }
+      }
+      // Draw liquid blobs
+      for (let p of particles) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + "cc"; // semi-transparent
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 18;
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      animationRef.current = requestAnimationFrame(animate);
+    }
+    animate();
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      canvas.removeEventListener("mousemove", handleMouseMove);
+      cancelAnimationFrame(animationRef.current);
+    };
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     login(formData);
@@ -20,8 +107,10 @@ const LoginPage = () => {
   return (
     <div className="h-screen grid lg:grid-cols-2">
       {/* Left Side - Form */}
-      <div className="flex flex-col justify-center items-center p-6 sm:p-12">
-        <div className="w-full max-w-md space-y-8">
+      <div className="relative flex flex-col justify-center items-center p-6 sm:p-12 overflow-hidden">
+        {/* Liquid Canvas Background */}
+        <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "auto", width: "100%", height: "100%" }} />
+        <div className="w-full max-w-md space-y-8" style={{ position: "relative", zIndex: 1 }}>
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="flex flex-col items-center gap-2 group">
