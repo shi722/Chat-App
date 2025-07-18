@@ -24,6 +24,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    about: {
+      type: String,
+      default: "Hey there! I am using ByteTalk."
+    },
   },
   { timestamps: true }
 );

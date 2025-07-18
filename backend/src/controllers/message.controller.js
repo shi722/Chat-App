@@ -115,3 +115,36 @@ export const deleteMessageForEveryone = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const addReaction = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+    const userId = req.user._id;
+    if (!emoji) return res.status(400).json({ error: "Emoji is required" });
+    const message = await Message.findById(messageId);
+    if (!message) return res.status(404).json({ error: "Message not found" });
+    // Remove previous reaction by this user (if any)
+    message.reactions = message.reactions.filter(r => String(r.userId) !== String(userId));
+    // Add new reaction
+    message.reactions.push({ userId, emoji });
+    await message.save();
+    res.status(200).json(message);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const removeReaction = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+    const message = await Message.findById(messageId);
+    if (!message) return res.status(404).json({ error: "Message not found" });
+    message.reactions = message.reactions.filter(r => String(r.userId) !== String(userId));
+    await message.save();
+    res.status(200).json(message);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

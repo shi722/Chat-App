@@ -8,6 +8,10 @@ const ProfilePage = () => {
   const contentRef = useRef(null);
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
   const [selectedImg, setSelectedImg] = useState(null);
+  const [about, setAbout] = useState(authUser?.about || "");
+  useEffect(() => { setAbout(authUser?.about || ""); }, [authUser]);
+  const [aboutEdit, setAboutEdit] = useState(false);
+  const defaultAbout = "Hey there! I am using ByteTalk.";
 
   // Close on overlay click (but not on content click)
   useEffect(() => {
@@ -94,6 +98,37 @@ const ProfilePage = () => {
                 Email Address
               </div>
               <p className="px-4 py-2.5 bg-base-200 rounded-lg border">{authUser?.email}</p>
+            </div>
+            {/* About Section */}
+            <div className="space-y-1.5">
+              <div className="text-sm text-zinc-400 flex items-center gap-2">
+                About
+              </div>
+              {aboutEdit ? (
+                <div className="flex gap-2 items-center">
+                  <input
+                    className="input input-bordered flex-1"
+                    value={about ?? defaultAbout}
+                    onChange={e => setAbout(e.target.value)}
+                    maxLength={120}
+                    disabled={isUpdatingProfile}
+                  />
+                  <button
+                    className="btn btn-sm btn-primary"
+                    disabled={isUpdatingProfile}
+                    onClick={async () => {
+                      await updateProfile({ about });
+                      setAboutEdit(false);
+                    }}
+                  >Save</button>
+                  <button className="btn btn-sm" onClick={() => { setAbout(authUser?.about || ""); setAboutEdit(false); }}>Cancel</button>
+                </div>
+              ) : (
+                <div className="flex gap-2 items-center">
+                  <p className="px-4 py-2.5 bg-base-200 rounded-lg border flex-1">{about?.trim() ? about : defaultAbout}</p>
+                  <button className="btn btn-sm" onClick={() => setAboutEdit(true)}>Edit</button>
+                </div>
+              )}
             </div>
           </div>
 

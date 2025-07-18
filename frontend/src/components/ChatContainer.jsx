@@ -7,6 +7,11 @@ import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
 import { HiDotsVertical } from "react-icons/hi";
+import { FaTrashAlt } from "react-icons/fa";
+import { useState as useLocalState } from "react";
+import { axiosInstance } from "../lib/axios";
+
+const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
 const ChatContainer = () => {
   const {
@@ -21,6 +26,29 @@ const ChatContainer = () => {
   const { socket } = useAuthStore();
   const messageEndRef = useRef(null);
   const [menuOpenId, setMenuOpenId] = useState(null);
+  const [reactionPickerId, setReactionPickerId] = useLocalState(null);
+
+  // Close menu on backdrop click
+  useEffect(() => {
+    if (!menuOpenId) return;
+    const handleClick = (e) => {
+      // If click is outside any .msg-menu, close menu
+      if (!e.target.closest('.msg-menu')) setMenuOpenId(null);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [menuOpenId]);
+
+  // Close emoji picker on backdrop click
+  useEffect(() => {
+    if (!reactionPickerId) return;
+    const handleClick = (e) => {
+      // If click is outside any .emoji-picker, close picker
+      if (!e.target.closest('.emoji-picker')) setReactionPickerId(null);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [reactionPickerId]);
 
   useEffect(() => {
     getMessages(selectedUser._id);
@@ -95,25 +123,29 @@ const ChatContainer = () => {
                 <HiDotsVertical />
               </div>
               {menuOpenId === message._id && (
-                <div className="absolute right-0 top-6 bg-base-200 border rounded shadow z-10 min-w-[140px]">
+                <div className="msg-menu absolute right-0 top-6 bg-base-100 border border-base-300 rounded-xl shadow-xl z-50 min-w-[160px] py-2 px-1 flex flex-col gap-1 animate-fade-in">
                   <button
-                    className="block w-full text-left px-4 py-2 hover:bg-base-300"
+                    type="button"
+                    className="flex items-center gap-2 w-full text-left px-4 py-2 rounded-lg hover:bg-base-200 transition-colors"
                     onClick={() => {
                       useChatStore.getState().deleteMessageForMe(message._id);
                       setMenuOpenId(null);
                     }}
                   >
-                    Delete for me
+                    <FaTrashAlt className="text-zinc-500" />
+                    <span>Delete for me</span>
                   </button>
                   {message.senderId === authUser._id && (
                     <button
-                      className="block w-full text-left px-4 py-2 hover:bg-base-300 text-red-500"
+                      type="button"
+                      className="flex items-center gap-2 w-full text-left px-4 py-2 rounded-lg hover:bg-red-100 text-red-600 hover:text-red-800 transition-colors"
                       onClick={() => {
                         useChatStore.getState().deleteMessageForEveryone(message._id);
                         setMenuOpenId(null);
                       }}
                     >
-                      Delete for everyone
+                      <FaTrashAlt className="text-red-500" />
+                      <span>Delete for everyone</span>
                     </button>
                   )}
                 </div>
@@ -155,7 +187,59 @@ const ChatContainer = () => {
                 </span>
               )}
             </div>
-            <div className="chat-bubble flex flex-col">
+            <div className="chat-bubble flex flex-col relative">
+              {/* Emoji Reactions Display */}
+              {Array.isArray(message.reactions) && message.reactions.length > 0 && (
+                <div className="flex gap-1 mt-2">
+                  {EMOJIS.filter(e => (message.reactions || []).some(r => r.emoji === e)).map((emoji) => (
+                    <span key={emoji} className="px-2 py-1 rounded-full bg-base-200 border text-lg flex items-center gap-1">
+                      {emoji}
+                      <span className="text-xs">
+                        {(message.reactions || []).filter(r => r.emoji === emoji).length}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {/* Add Reaction Icon */}
+              <button
+                type="button"
+                className="absolute -bottom-6 right-0 text-xl hover:scale-125 transition-transform"
+                onClick={() => setReactionPickerId(reactionPickerId === message._id ? null : message._id)}
+                title="Add Reaction"
+              >
+                ➕
+              </button>
+              {/* Emoji Picker */}
+              {reactionPickerId === message._id && (
+                <div
+                  className={`emoji-picker absolute z-50 bottom-8 ${message.senderId === authUser._id ? 'right-0' : 'left-0'} bg-base-100 border border-base-300 rounded-xl shadow-xl flex gap-2 p-3 animate-fade-in`}
+                  style={{ minWidth: 200, overflow: 'visible' }}
+                >
+                  {EMOJIS.map((emoji) => (
+                    <button
+                      type="button"
+                      key={emoji}
+                      className="text-2xl hover:scale-125 transition-transform rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        setReactionPickerId(null);
+                        // If user already reacted with this emoji, remove reaction
+                        const existing = (message.reactions || []).find(r => String(r.userId) === String(authUser._id) && r.emoji === emoji);
+                        if (existing) {
+                          await axiosInstance.delete(`/messages/${message._id}/reactions`);
+                        } else {
+                          await axiosInstance.post(`/messages/${message._id}/reactions`, { emoji });
+                        }
+                        // Refresh messages (or ideally use socket for real-time)
+                        getMessages(selectedUser._id);
+                      }}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
               {message.isDeletedForEveryone ? (
                 <span className="italic text-zinc-400">Message deleted</span>
               ) : (
