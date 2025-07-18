@@ -1,10 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Camera, Mail, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const ProfilePage = () => {
+  const navigate = useNavigate();
+  const contentRef = useRef(null);
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
   const [selectedImg, setSelectedImg] = useState(null);
+
+  // Close on overlay click (but not on content click)
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (contentRef.current && !contentRef.current.contains(e.target)) {
+        navigate(-1);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [navigate]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -22,8 +36,8 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="h-screen pt-20">
-      <div className="max-w-2xl mx-auto p-4 py-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div ref={contentRef} className="relative bg-base-100 rounded-xl shadow-2xl w-full max-w-2xl p-6 overflow-y-auto max-h-[90vh]">
         <div className="bg-base-300 rounded-xl p-6 space-y-8">
           <div className="text-center">
             <h1 className="text-2xl font-semibold ">Profile</h1>
