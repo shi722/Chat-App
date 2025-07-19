@@ -1,5 +1,6 @@
 import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
+import Notification from "../models/notification.model.js";
 
 import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
@@ -62,6 +63,16 @@ export const sendMessage = async (req, res) => {
     });
 
     await newMessage.save();
+
+    // Notification logic
+    const receiver = await User.findById(receiverId);
+    if (!receiver.mutedConversations.includes(senderId)) {
+      await Notification.create({
+        userId: receiverId,
+        type: "message",
+        message: `New message from ${req.user.fullName}`,
+      });
+    }
 
     const receiverSocketId = getReceiverSocketId(receiverId);
     if (receiverSocketId) {
@@ -144,6 +155,26 @@ export const removeReaction = async (req, res) => {
     message.reactions = message.reactions.filter(r => String(r.userId) !== String(userId));
     await message.save();
     res.status(200).json(message);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getNotifications = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const notifications = await Notification.find({ userId }).sort({ createdAt: -1 });
+    res.status(200).json(notifications);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const markNotificationsRead = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    await Notification.updateMany({ userId, isRead: false }, { isRead: true });
+    res.status(200).json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }

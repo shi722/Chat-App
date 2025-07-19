@@ -87,7 +87,7 @@ export const logout = (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { profilePic, about } = req.body;
+    const { profilePic, about, fullName } = req.body;
     const userId = req.user._id;
     const updateFields = {};
     if (profilePic) {
@@ -96,6 +96,9 @@ export const updateProfile = async (req, res) => {
     }
     if (typeof about === "string") {
       updateFields.about = about;
+    }
+    if (typeof fullName === "string" && fullName.trim().length > 0) {
+      updateFields.fullName = fullName.trim();
     }
     if (Object.keys(updateFields).length === 0) {
       return res.status(400).json({ message: "No profile fields to update" });
@@ -118,5 +121,41 @@ export const checkAuth = (req, res) => {
   } catch (error) {
     console.log("Error in checkAuth controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const muteConversation = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { conversationUserId } = req.body;
+    if (!conversationUserId) {
+      return res.status(400).json({ message: "conversationUserId is required" });
+    }
+    const user = await User.findById(userId);
+    if (!user.mutedConversations.includes(conversationUserId)) {
+      user.mutedConversations.push(conversationUserId);
+      await user.save();
+    }
+    res.status(200).json({ success: true, mutedConversations: user.mutedConversations });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const unmuteConversation = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { conversationUserId } = req.body;
+    if (!conversationUserId) {
+      return res.status(400).json({ message: "conversationUserId is required" });
+    }
+    const user = await User.findById(userId);
+    user.mutedConversations = user.mutedConversations.filter(
+      (id) => String(id) !== String(conversationUserId)
+    );
+    await user.save();
+    res.status(200).json({ success: true, mutedConversations: user.mutedConversations });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
   }
 };

@@ -14,6 +14,15 @@ export const useAuthStore = create((set, get) => ({
   onlineUsers: [],
   socket: null,
   mutedConversations: [],
+  isNotificationMuted: JSON.parse(localStorage.getItem("isNotificationMuted")) || false,
+
+  toggleNotificationMute: () => {
+    set((state) => {
+      const newMute = !state.isNotificationMuted;
+      localStorage.setItem("isNotificationMuted", JSON.stringify(newMute));
+      return { isNotificationMuted: newMute };
+    });
+  },
 
   checkAuth: async () => {
     try {
@@ -87,6 +96,8 @@ export const useAuthStore = create((set, get) => ({
   // Remove notifications and push notification logic
   // Add playNotificationSound for message events
   playNotificationSound: () => {
+    const { isNotificationMuted } = get();
+    if (isNotificationMuted) return;
     const audio = new window.Audio("/notification.mp3");
     audio.play();
   },

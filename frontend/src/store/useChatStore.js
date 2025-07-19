@@ -100,4 +100,12 @@ export const useChatStore = create((set, get) => ({
   },
 
   setSelectedUser: (selectedUser) => set({ selectedUser }),
+
+  getUnreadCount: (userId) => {
+    const { messages } = get();
+    // Count messages sent by userId to the logged-in user that are not seen
+    return messages.filter(
+      (msg) => msg.senderId === userId && msg.status !== "seen"
+    ).length;
+  },
 }));

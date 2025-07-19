@@ -28,6 +28,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "Hey there! I am using ByteTalk."
     },
+    mutedConversations: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    }],
   },
   { timestamps: true }
 );
