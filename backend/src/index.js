@@ -20,7 +20,8 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:5173", // Corrected port for Vite frontend
+    //origin: "http://localhost:5173", // Corrected port for Vite frontend
+    origin: "https://bytetalk-ui.onrender.com",
     credentials: true,
   })
 );
