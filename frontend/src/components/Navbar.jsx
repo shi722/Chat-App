@@ -1,9 +1,12 @@
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
-import { LogOut, Mailbox, MessageSquare, Settings, User } from "lucide-react";
+import { LogOut, Mailbox, MessageSquare, Settings, User, Bell } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
 
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
+  // Removed notifications, fetchNotifications, markNotificationsRead
+  // Removed notifOpen, setNotifOpen, notifRef, unreadCount, and related useEffects
 
   return (
     <header
@@ -35,6 +38,7 @@ const Navbar = () => {
 
             {authUser && (
               <>
+                {/* Notification Bell removed as per user request */}
                 <Link to={"/profile"} className={`btn btn-sm gap-2`}>
                   <User className="size-5" />
                   <span className="hidden sm:inline">Profile</span>

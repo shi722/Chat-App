@@ -12,6 +12,9 @@ const ProfilePage = () => {
   useEffect(() => { setAbout(authUser?.about || ""); }, [authUser]);
   const [aboutEdit, setAboutEdit] = useState(false);
   const defaultAbout = "Hey there! I am using ByteTalk.";
+  const [name, setName] = useState(authUser?.fullName || "");
+  useEffect(() => { setName(authUser?.fullName || ""); }, [authUser]);
+  const [nameEdit, setNameEdit] = useState(false);
 
   // Close on overlay click (but not on content click)
   useEffect(() => {
@@ -89,7 +92,31 @@ const ProfilePage = () => {
                 <User className="w-4 h-4" />
                 Full Name
               </div>
-              <p className="px-4 py-2.5 bg-base-200 rounded-lg border">{authUser?.fullName}</p>
+              {nameEdit ? (
+                <div className="flex gap-2 items-center">
+                  <input
+                    className="input input-bordered flex-1"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    maxLength={50}
+                    disabled={isUpdatingProfile}
+                  />
+                  <button
+                    className="btn btn-sm btn-primary"
+                    disabled={isUpdatingProfile || !name.trim()}
+                    onClick={async () => {
+                      await updateProfile({ fullName: name });
+                      setNameEdit(false);
+                    }}
+                  >Save</button>
+                  <button className="btn btn-sm" onClick={() => { setName(authUser?.fullName || ""); setNameEdit(false); }}>Cancel</button>
+                </div>
+              ) : (
+                <div className="flex gap-2 items-center">
+                  <p className="px-4 py-2.5 bg-base-200 rounded-lg border flex-1">{authUser?.fullName}</p>
+                  <button className="btn btn-sm" onClick={() => setNameEdit(true)}>Edit</button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">

@@ -1,10 +1,11 @@
-import { X } from "lucide-react";
+import { X, Bell, BellOff } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 
 const ChatHeader = () => {
   const { selectedUser, setSelectedUser } = useChatStore();
-  const { onlineUsers } = useAuthStore();
+  const { onlineUsers, authUser, muteConversation, unmuteConversation } = useAuthStore();
+  const isMuted = (authUser?.mutedConversations || []).some(id => String(id) === String(selectedUser._id));
 
   return (
     <div className="p-2.5 border-b border-base-300">
@@ -26,10 +27,31 @@ const ChatHeader = () => {
           </div>
         </div>
 
-        {/* Close button */}
-        <button onClick={() => setSelectedUser(null)}>
-          <X />
-        </button>
+        {/* Mute/Unmute button */}
+        <div className="flex items-center gap-2 relative">
+          <button
+            className="btn btn-sm btn-ghost relative"
+            title={isMuted ? "Unmute Conversation" : "Mute Conversation"}
+            onClick={() => {
+              if (isMuted) {
+                unmuteConversation(selectedUser._id);
+              } else {
+                muteConversation(selectedUser._id);
+              }
+            }}
+          >
+            {isMuted ? <BellOff className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+            {isMuted && (
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs font-bold border border-white">
+                ×
+              </span>
+            )}
+          </button>
+          {/* Close button */}
+          <button onClick={() => setSelectedUser(null)}>
+            <X />
+          </button>
+        </div>
       </div>
     </div>
   );

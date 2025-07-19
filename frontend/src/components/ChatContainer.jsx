@@ -222,6 +222,7 @@ const ChatContainer = () => {
                       key={emoji}
                       className="text-2xl hover:scale-125 transition-transform rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-primary"
                       onClick={async (e) => {
+                        e.preventDefault(); // Prevent default behavior
                         e.stopPropagation();
                         setReactionPickerId(null);
                         // If user already reacted with this emoji, remove reaction

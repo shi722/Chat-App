@@ -13,6 +13,7 @@ export const useAuthStore = create((set, get) => ({
   isCheckingAuth: true,
   onlineUsers: [],
   socket: null,
+  mutedConversations: [],
 
   checkAuth: async () => {
     try {
@@ -83,8 +84,77 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  // Remove notifications and push notification logic
+  // Add playNotificationSound for message events
+  playNotificationSound: () => {
+    const audio = new window.Audio("/notification.mp3");
+    audio.play();
+  },
+
+  muteConversation: async (conversationUserId) => {
+    set((state) => ({
+      authUser: {
+        ...state.authUser,
+        mutedConversations: [...(state.authUser.mutedConversations || []), conversationUserId].map(String),
+      },
+      mutedConversations: [...(state.mutedConversations || []), conversationUserId].map(String),
+    }));
+    try {
+      const res = await axiosInstance.put("/auth/mute-conversation", { conversationUserId });
+      set((state) => ({
+        authUser: {
+          ...state.authUser,
+          mutedConversations: res.data.mutedConversations.map(String),
+        },
+        mutedConversations: res.data.mutedConversations.map(String),
+      }));
+      toast.success("Conversation muted");
+    } catch (error) {
+      // Revert optimistic update
+      set((state) => ({
+        authUser: {
+          ...state.authUser,
+          mutedConversations: (state.authUser.mutedConversations || []).filter(id => String(id) !== String(conversationUserId)),
+        },
+        mutedConversations: (state.mutedConversations || []).filter(id => String(id) !== String(conversationUserId)),
+      }));
+      toast.error("Failed to mute conversation");
+    }
+  },
+
+  unmuteConversation: async (conversationUserId) => {
+    set((state) => ({
+      authUser: {
+        ...state.authUser,
+        mutedConversations: (state.authUser.mutedConversations || []).filter(id => String(id) !== String(conversationUserId)),
+      },
+      mutedConversations: (state.mutedConversations || []).filter(id => String(id) !== String(conversationUserId)),
+    }));
+    try {
+      const res = await axiosInstance.put("/auth/unmute-conversation", { conversationUserId });
+      set((state) => ({
+        authUser: {
+          ...state.authUser,
+          mutedConversations: res.data.mutedConversations.map(String),
+        },
+        mutedConversations: res.data.mutedConversations.map(String),
+      }));
+      toast.success("Conversation unmuted");
+    } catch (error) {
+      // Revert optimistic update
+      set((state) => ({
+        authUser: {
+          ...state.authUser,
+          mutedConversations: [...(state.authUser.mutedConversations || []), String(conversationUserId)],
+        },
+        mutedConversations: [...(state.mutedConversations || []), String(conversationUserId)],
+      }));
+      toast.error("Failed to unmute conversation");
+    }
+  },
+
   connectSocket: () => {
-    const { authUser } = get();
+    const { authUser, playNotificationSound } = get();
     if (!authUser || get().socket?.connected) return;
 
     const socket = io(BASE_URL, {
@@ -98,6 +168,14 @@ export const useAuthStore = create((set, get) => ({
 
     socket.on("getOnlineUsers", (userIds) => {
       set({ onlineUsers: userIds });
+    });
+
+    // Listen for newMessage for sound notification
+    socket.on("newMessage", (msg) => {
+      // Only play sound if not muted
+      if (!((authUser.mutedConversations || []).map(String).includes(String(msg.senderId)))) {
+        playNotificationSound();
+      }
     });
   },
   disconnectSocket: () => {
